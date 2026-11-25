@@ -611,7 +611,7 @@ def split_screens(text):
 
 def compile_project(text, app_name="GeneratedApp", strict=True, extensions=None):
     """回傳 {畫面名: (scm, bky)}。extensions：[Extension]（load_extensions 的結果），嚴格模式會一併驗證"""
-    return {n: Compiler(app_name, strict, extensions).run(t) for n, t in split_screens(text)}
+    return {n: Compiler(app_name, strict, extensions).run(t, n) for n, t in split_screens(text)}
 
 # ---------------------------------------------------------------- 編譯
 _ID_CHARS = string.ascii_letters + string.digits + "!#$%()*+,-./:;=?@[]^_`{|}~"
@@ -991,7 +991,7 @@ class Compiler:
             ET.SubElement(prev, "next").append(cur)
 
     # ---- 主流程
-    def run(self, text):
+    def run(self, text, screen="Screen1"):
         tree = ast.parse(text)
         form, comp_list, glob_nodes, events, procs_nodes = None, [], [], [], []
         for n in tree.body:
@@ -1023,7 +1023,10 @@ class Compiler:
                 events.append(n)
             else:
                 raise CompileError(f"最外層不支援：{ast.unparse(n)}")
-        # scm
+        # scm：沒宣告 Form 時自動補上（AI 常省略 Screen1 = Form()）
+        if not any(t == "Form" for _, t, _, _ in comp_list):
+            comp_list.insert(0, (screen, "Form", None, {"Title": screen}))
+            self.comps.setdefault(screen, "Form")
         nodes = {}
         for name, typ, parent, props in comp_list:
             d = {"$Name": name, "$Type": typ,
@@ -1033,6 +1036,8 @@ class Compiler:
             d["Uuid"] = "0" if typ == "Form" else str(random.randint(-2**31, 2**31 - 1))
             nodes[name] = d
             if parent:
+                if parent not in nodes:
+                    raise CompileError(f"{name} 的父元件 {parent} 還沒宣告（父元件要寫在前面）")
                 nodes[parent].setdefault("$Components", []).append(d)
             else:
                 form = d
