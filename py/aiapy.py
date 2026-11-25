@@ -900,6 +900,8 @@ class Compiler:
 
     # ---- 敘述
     def stmt(self, n):
+        if isinstance(n, (ast.Global, ast.Nonlocal, ast.Pass)):
+            return None   # Python 習慣寫法，積木不需要
         if isinstance(n, ast.Assign):
             tgt = n.targets[0]
             if isinstance(tgt, ast.Attribute) and self._is_any(tgt.value):
