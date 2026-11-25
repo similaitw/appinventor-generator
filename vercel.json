@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "api/generate.js": { "includeFiles": "prompt.md", "maxDuration": 60 }
+  },
+  "headers": [
+    {
+      "source": "/samples/(.*)",
+      "headers": [{ "key": "Access-Control-Allow-Origin", "value": "*" }]
+    }
+  ]
+}

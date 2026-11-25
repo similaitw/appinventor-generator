@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App Inventor 產生器｜用中文描述，生出 .aia 專案</title>
+<meta name="description" content="用中文描述想做的 App，AI 寫出 AIA-Py，自動轉成可匯入 MIT App Inventor 的 .aia 專案檔。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo">AI²</div>
+    <div>
+      <h1>App Inventor 產生器</h1>
+      <p>用中文描述 App → AI 寫程式 → 自動轉成 .aia → 匯入 MIT App Inventor</p>
+    </div>
+  </div>
+  <div id="pyStatus" class="pill loading">轉換器載入中…</div>
+</header>
+
+<main>
+  <!-- 步驟 1 -->
+  <section class="card" id="step1">
+    <div class="step-head"><span class="num">1</span><h2>描述你想做的 App</h2></div>
+    <textarea id="desc" rows="4" placeholder="例如：做一個 BMI 計算機，輸入身高（公分）和體重（公斤），按按鈕顯示 BMI 和體位建議，過重時文字變紅色。"></textarea>
+    <div class="chips" id="chips"></div>
+    <div class="row">
+      <label class="inline">專案名稱（英文）<input id="appName" value="MyApp" maxlength="40"></label>
+      <button class="ghost" id="uploadBtn" title="把現有的 .aia 轉成 AIA-Py，再請 AI 修改">匯入既有 .aia 來修改</button>
+      <input type="file" id="uploadInput" accept=".aia" hidden>
+      <span id="uploadInfo" class="muted"></span>
+    </div>
+  </section>
+
+  <!-- 步驟 2 -->
+  <section class="card" id="step2">
+    <div class="step-head"><span class="num">2</span><h2>請 AI 寫程式</h2></div>
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="copy" role="tab">複製提示詞（免費，任何 AI 都可）</button>
+      <button class="tab" data-tab="api" role="tab">Gemini 自動產生</button>
+    </div>
+
+    <div class="tabpane" id="pane-copy">
+      <ol class="howto">
+        <li>按「複製完整提示詞」，貼到 Gemini、ChatGPT 或 Claude 的對話框送出。</li>
+        <li>把 AI 的整段回覆複製回來，貼到下方，按「放進編輯器」。</li>
+      </ol>
+      <div class="row">
+        <button id="copyPrompt" class="primary">複製完整提示詞</button>
+        <a id="openGemini" href="https://gemini.google.com/app" target="_blank" rel="noopener">開啟 Gemini ↗</a>
+        <a href="https://chatgpt.com/" target="_blank" rel="noopener">開啟 ChatGPT ↗</a>
+        <a href="https://claude.ai/new" target="_blank" rel="noopener">開啟 Claude ↗</a>
+      </div>
+      <textarea id="pasteReply" rows="5" placeholder="把 AI 的回覆整段貼在這裡…"></textarea>
+      <div class="row"><button id="usePaste">放進編輯器並檢查</button></div>
+      <details class="fixhelp">
+        <summary>檢查出錯時怎麼辦？</summary>
+        <p>按下方錯誤訊息旁的「複製修正提示詞」，貼回同一個 AI 對話，再把新的回覆貼回來即可。</p>
+      </details>
+    </div>
+
+    <div class="tabpane hidden" id="pane-api">
+      <div id="serverKeyNote" class="note hidden">此網站已設定共用金鑰，可直接產生（也可以填自己的金鑰）。</div>
+      <div class="row">
+        <label class="inline grow">Gemini API 金鑰
+          <input id="apiKey" type="password" placeholder="AIza…（只存在你的瀏覽器）" autocomplete="off">
+        </label>
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">免費申請金鑰 ↗</a>
+      </div>
+      <div class="row">
+        <label class="inline grow">模型
+          <select id="model"><option value="">（填好金鑰後自動載入）</option></select>
+        </label>
+        <button class="ghost" id="loadModels">重新載入模型</button>
+      </div>
+      <div class="row">
+        <label class="inline">錯誤自動修正次數
+          <select id="maxFix"><option>0</option><option>1</option><option>2</option><option selected>3</option></select>
+        </label>
+        <button id="generate" class="primary">產生 App</button>
+      </div>
+      <div id="genLog" class="log"></div>
+    </div>
+  </section>
+
+  <!-- 步驟 3 -->
+  <section class="card" id="step3">
+    <div class="step-head"><span class="num">3</span><h2>AIA-Py 程式（可直接修改）</h2></div>
+    <div id="aiNote" class="ainote hidden"></div>
+    <textarea id="code" rows="18" spellcheck="false" placeholder="AI 產生的程式會出現在這裡，也可以自己寫或修改。"></textarea>
+    <div class="row">
+      <button id="check" class="primary">檢查並轉換</button>
+      <button class="ghost" id="showSpec">看語法說明</button>
+      <span id="checkMsg" class="muted"></span>
+    </div>
+    <div id="errorBox" class="error hidden">
+      <div id="errorText"></div>
+      <button class="ghost small" id="copyFix">複製修正提示詞</button>
+    </div>
+  </section>
+
+  <!-- 步驟 4 -->
+  <section class="card hidden" id="step4">
+    <div class="step-head"><span class="num">4</span><h2>結果</h2></div>
+    <div class="result">
+      <div>
+        <h3>畫面元件</h3>
+        <div id="tree"></div>
+      </div>
+      <div>
+        <h3>積木統計</h3>
+        <div id="stats"></div>
+      </div>
+    </div>
+    <div class="row">
+      <button id="download" class="primary big">下載 .aia</button>
+      <span class="muted">在 App Inventor 選「專案 → 匯入專案（.aia）」即可開啟。</span>
+    </div>
+  </section>
+
+  <dialog id="specDialog">
+    <div class="dialog-head"><h3>AIA-Py 語法與元件參考</h3><button id="closeSpec" class="ghost small">關閉</button></div>
+    <pre id="specText"></pre>
+  </dialog>
+</main>
+
+<footer>
+  轉換器 <a href="https://github.com/similaitw/appinventor-generator" target="_blank" rel="noopener">aiapy</a> 在你的瀏覽器裡執行（Pyodide），程式碼不會上傳。
+  元件規格取自 MIT App Inventor 線上版元件目錄。MIT App Inventor 是 MIT 的商標，本工具與 MIT 無關。
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/pyodide@0.29.5/pyodide.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
